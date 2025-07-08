@@ -1,9 +1,68 @@
 // Include delle librerie necessarie
 #include "utils/raylib/src/raylib.h" // Libreria grafica raylib
 #include "lib/common.h"              // Header con definizioni comuni del progetto
+//Define's
+#define LIVES 10
 
+
+// PROTOTYPE'S
 bool IsDirectionValid(Vector2 pos, Vector2 dir);
+void ResetGame(Vector2 *ghostStartPositions, Vector2 *pacmanPos, int *score , int state); 
+// GLOBAL VAR
+int pacmanLives = LIVES;
+bool gameOver = false;
 
+
+
+void ResetGame(Vector2 *ghostStartPositions, Vector2 *pacmanPos, int *score , int state)
+{
+    // Reset vite e stato
+    pacmanLives = LIVES;
+    gameOver = false;
+
+    // Reset punteggio
+    *score = 0;
+
+    // Reset mappa
+    char originalMap[MAP_ROWS][MAP_COLS] = {
+        "###############",
+        "#.............#",
+        "#.###.###.###.#",
+        "#.............#",
+        "#.###.#.#.###.#",
+        "#.............#",
+        "#.###.###.###.#",
+        "#.............#",
+        "#.###########.#",
+        "###############"};
+
+    for (int row = 0; row < MAP_ROWS; row++)
+    {
+        for (int col = 0; col < MAP_COLS; col++)
+        {
+            map[row][col] = originalMap[row][col];
+        }
+    }
+
+    // Reset posizione Pacman
+    *pacmanPos = (Vector2){1 * TILE_SIZE + TILE_SIZE / 2.0f, 1 * TILE_SIZE + TILE_SIZE / 2.0f};
+
+    // Reset fantasmi
+    for (int i = 0; i < NUM_GHOST; i++)
+    {
+        ghosts[i].pos = ghostStartPositions[i];
+        ghosts[i].dir = (Vector2){GetRandomValue(-1, 1), GetRandomValue(-1, 1)};
+        while (ghosts[i].dir.x == 0 && ghosts[i].dir.y == 0)
+        {
+            ghosts[i].dir = (Vector2){GetRandomValue(-1, 1), GetRandomValue(-1, 1)};
+        }
+    }
+    // with this we remove a lot of duplicated code 
+    if(state == QUIT)
+    {
+        exit(EXIT_SUCCESS); 
+    }
+}
 
 // Definizione della mappa del gioco
 // '#' = muro, '.' = puntino da mangiare, ' ' = spazio vuoto
@@ -36,6 +95,14 @@ bool IsDirectionValid(Vector2 pos, Vector2 dir)
         return map[row][col] != '#';
     }
     return false;
+}
+
+// CheckPacmanCollision: Check if the current position of Pacman is equal to the current position of a ghost
+
+bool CheckPacmanCollision(Vector2 pacmanPos, Vector2 ghostPos)
+{
+    return (fabs(pacmanPos.x - ghostPos.x) < TILE_SIZE * 0.75f &
+            fabs(pacmanPos.y - ghostPos.y) < TILE_SIZE * 0.75f);
 }
 
 // Funzione principale del gioco
@@ -83,6 +150,57 @@ int main(void)
     // === CICLO PRINCIPALE DEL GIOCO ===
     while (!WindowShouldClose()) // Continua fino a quando la finestra non viene chiusa
     {
+
+        // GameOver implementation
+        if (gameOver)
+        {
+            BeginDrawing();
+            ClearBackground(BLACK);
+            DrawText("GAMEOVER", screenWidth / 2 - MeasureText("GAMEOVER", 40) / 2, screenHeight / 2 - 20, 40, RED);
+            DrawText(TextFormat("Final Score: %d", score), screenWidth / 2 - MeasureText("Final Score: 9999", 20) / 2, screenHeight / 2 + 30, 20, WHITE);
+            DrawText(TextFormat("Lives: %d", pacmanLives), 10, 35, 20, WHITE);
+            // Pulsante Restart centrato
+            int btnWidth = 140;
+            int btnHeight = 40;
+            int btnX = screenWidth / 2 - btnWidth / 2;
+            int btnY = screenHeight / 2 + 80;
+            // create an btn istance
+            Rectangle resetBtn = {btnX, btnY, btnWidth, btnHeight};
+            // draw on screen the btn
+            DrawRectangleRec(resetBtn, DARKGRAY);
+
+            int textWidth = MeasureText("Restart", 20);
+            int textX = btnX + (btnWidth - textWidth) / 2;
+            int textY = btnY + (btnHeight - 20) / 2;
+            // text inside the btn.
+            DrawText("Restart", textX, textY, 20, WHITE);
+             // add lisner
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(GetMousePosition(), resetBtn))
+            {
+                ResetGame(ghostStartPositions, &pacmanPos, &score,RESTART);
+            }
+
+            // Pulsante Exit sotto il Restart
+            int exitBtnY = btnY + btnHeight + 20; // 20px di spazio sotto Restart
+            Rectangle exitBtn = {btnX, exitBtnY, btnWidth, btnHeight};
+            DrawRectangleRec(exitBtn, DARKGRAY);
+
+            // Testo centrato nel pulsante Exit
+            int exitTextWidth = MeasureText("EXIT", 20);
+            int exitTextX = btnX + (btnWidth - exitTextWidth) / 2;
+            int exitTextY = exitBtnY + (btnHeight - 20) / 2;
+            DrawText("EXIT", exitTextX, exitTextY, 20, WHITE);
+            
+            // add lisner
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(GetMousePosition(),exitBtn))
+            {
+                ResetGame(ghostStartPositions, &pacmanPos, &score,QUIT);
+            }
+           
+            // DrawText(TextFormat("@Popper002-RiccardoOro"),-10,35,20,YELLOW);
+            EndDrawing();
+            continue;
+        }
         // === GESTIONE INPUT ===
         // Calcola la prossima posizione di Pacman basata sui tasti premuti
         Vector2 nextPos = pacmanPos; // Inizia dalla posizione corrente
@@ -182,6 +300,35 @@ int main(void)
             }
         }
 
+        for (int i = 0; i < NUM_GHOST; i++)
+        {
+            if (CheckPacmanCollision(pacmanPos, ghosts[i].pos))
+            {
+                pacmanLives--;
+                if (pacmanLives == 0)
+                {
+                    gameOver = true;
+                }
+                else
+                {
+                    // Reset Pacman e fantasmi
+
+                    pacmanPos = (Vector2){1 * TILE_SIZE + TILE_SIZE / 2.0f, 1 * TILE_SIZE + TILE_SIZE / 2.0f};
+
+                    for (int j = 0; j < NUM_GHOST; j++)
+                    {
+                        ghosts[j].pos = ghostStartPositions[j];
+                        ghosts[j].dir = (Vector2){GetRandomValue(-1, 1), GetRandomValue(-1, 1)};
+                        while (ghosts[j].dir.x == 0 && ghosts[j].dir.y == 0)
+                        {
+                            ghosts[j].dir = (Vector2){GetRandomValue(-1, 1), GetRandomValue(-1, 1)};
+                        }
+                    }
+                }
+                break;
+            }
+        }
+
         // === RENDERING ===
         BeginDrawing();         // Inizia il frame di rendering
         ClearBackground(BLACK); // Pulisce lo schermo con sfondo nero
@@ -218,6 +365,10 @@ int main(void)
         // === INTERFACCIA UTENTE ===
         // Mostra il punteggio nell'angolo superiore sinistro
         DrawText(TextFormat("Score: %d", score), 10, 10, 20, WHITE);
+        // Vite in alto a destra
+        const char* livesText = TextFormat("Lives: %d", pacmanLives);
+        int livesTextWidth = MeasureText(livesText, 20);
+        DrawText(livesText, screenWidth - livesTextWidth - 10, 10, 20, WHITE);
 
         EndDrawing(); // Termina il frame di rendering
     }

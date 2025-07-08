@@ -4,11 +4,15 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <math.h>
 
 #define MAP_ROWS 20
 #define MAP_COLS 35 
 #define TILE_SIZE 40 
 #define NUM_GHOST 3
+
+#define QUIT 1
+#define RESTART 0  
 // Dichiarazione esterna della mappa (definita in main.c)
 extern char map[MAP_ROWS][MAP_COLS]; 
 
