@@ -24,6 +24,7 @@ typedef enum {
     GAME_STATE_INSTRUCTIONS   // Schermata istruzioni
 } GameState;
 
+
 #define QUIT 1
 #define RESTART 0  
 
@@ -60,6 +61,15 @@ typedef struct {
     PowerUpType type;   // Tipo di power-up attivo
     int timeLeft;       // Tempo rimanente dell'effetto (in frame)
 } ActivePowerUp;
+
+//Level compleate or not 
+typedef struct 
+{
+    int score; 
+    bool IsCompleate; 
+}LevelCompleate;
+
+
 
 // Dichiarazione esterna della mappa (definita in main.c)
 extern char map[MAP_ROWS][MAP_COLS]; 
