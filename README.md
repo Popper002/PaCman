@@ -38,9 +38,9 @@ This project was born from the desire to start studying the C programming langua
 ## Game Screenshots
 ![image info](screenshots/game.png)
 ## Power-Up System
-![image info](screenshots/powerUp.png)
+![image info](screenshots/PowerUp.png)
 ## Power-Up Action
-![image info](screenshots/powerUpAction.png) 
+![image info](screenshots/PowerUpAction.png) 
 
 
 ## Installation & Compilation
